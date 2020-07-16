@@ -1983,16 +1983,29 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   props: {
     'base_url': String
   },
   mounted: function mounted() {
-    this.getAllCompanies();
+    this.getAllCompanies("".concat(this.base_url, "/api/companies"), false);
   },
   data: function data() {
     return {
       companies: {},
+      allCompanies: [],
       company: {
         id: '',
         name: '',
@@ -2000,16 +2013,43 @@ __webpack_require__.r(__webpack_exports__);
         email: '',
         website: ''
       },
+      links: {
+        prev: '',
+        next: '',
+        first: '',
+        last: ''
+      },
+      meta: {
+        current_page: 0,
+        last_page: 0
+      },
+      currentUrl: '',
       file: '',
       errors: []
     };
   },
   methods: {
-    getAllCompanies: function getAllCompanies() {
+    getAllCompanies: function getAllCompanies(url, refresh) {
       var _this = this;
 
-      axios.get("".concat(this.base_url, "/api/companies")).then(function (response) {
-        _this.companies = response.data.data;
+      if (url == null) return;
+      this.currentUrl = url;
+      var requestPage = url.slice(-1);
+
+      if ($.isNumeric(requestPage) && typeof this.allCompanies[requestPage] !== 'undefined' && !refresh) {
+        this.companies = this.allCompanies[requestPage].data;
+        this.links = this.allCompanies[requestPage].links;
+        this.meta = this.allCompanies[requestPage].meta;
+        return;
+      }
+
+      axios.get(url).then(function (response) {
+        var requestObj = response.data,
+            currentPage = requestObj.meta.current_page;
+        _this.companies = requestObj.data;
+        _this.links = requestObj.links;
+        _this.meta = requestObj.meta;
+        _this.allCompanies[currentPage] = requestObj;
       })["catch"](function (error) {
         console.log(error.response);
       });
@@ -2030,7 +2070,7 @@ __webpack_require__.r(__webpack_exports__);
       }).then(function (response) {
         $('#companyModal').modal('hide');
 
-        _this2.getAllCompanies();
+        _this2.getAllCompanies(_this2.currentUrl, true);
       })["catch"](function (error) {
         if (error.response) {
           _this2.errors = error.response.data.errors;
@@ -2041,12 +2081,13 @@ __webpack_require__.r(__webpack_exports__);
       var _this3 = this;
 
       axios["delete"]("".concat(this.base_url, "/api/companies/").concat(companyId)).then(function (response) {
-        _this3.getAllCompanies();
+        _this3.getAllCompanies(_this3.currentUrl, true);
       })["catch"](function (error) {
         console.log(error.response);
       });
     },
     getCurrentCompany: function getCurrentCompany(companyObj) {
+      this.errors = [];
       this.company = companyObj;
     },
     fileHandler: function fileHandler() {
@@ -2143,17 +2184,30 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   props: {
     'base_url': String,
     'company_id': String
   },
   mounted: function mounted() {
-    this.getAllEmployees();
+    this.getAllEmployees("".concat(this.base_url, "/api/companies/").concat(this.company_id), false);
   },
   data: function data() {
     return {
       employees: {},
+      allEmployees: [],
       employee: {
         id: '',
         firstname: '',
@@ -2162,16 +2216,42 @@ __webpack_require__.r(__webpack_exports__);
         email: '',
         phone: ''
       },
+      links: {
+        prev: '',
+        next: '',
+        first: '',
+        last: ''
+      },
+      meta: {
+        current_page: 0,
+        last_page: 0
+      },
+      currentUrl: '',
       errors: []
     };
   },
   methods: {
-    getAllEmployees: function getAllEmployees() {
+    getAllEmployees: function getAllEmployees(url, refresh) {
       var _this = this;
 
-      axios.get("".concat(this.base_url, "/api/companies/").concat(this.company_id)).then(function (response) {
-        _this.employees = response.data.data;
-        console.log(_this.employees);
+      if (url == null) return;
+      this.currentUrl = url;
+      var requestPage = url.slice(-1);
+
+      if ($.isNumeric(requestPage) && typeof this.allEmployees[requestPage] !== 'undefined' && !refresh) {
+        this.employees = this.allEmployees[requestPage].data;
+        this.links = this.allEmployees[requestPage].links;
+        this.meta = this.allEmployees[requestPage].meta;
+        return;
+      }
+
+      axios.get(url).then(function (response) {
+        var requestObj = response.data,
+            currentPage = requestObj.meta.current_page;
+        _this.employees = requestObj.data;
+        _this.links = requestObj.links;
+        _this.meta = requestObj.meta;
+        _this.allEmployees[currentPage] = requestObj;
       })["catch"](function (error) {
         console.log(error.response);
       });
@@ -2183,7 +2263,7 @@ __webpack_require__.r(__webpack_exports__);
       axios.post("".concat(this.base_url, "/api/employees"), this.employee).then(function (response) {
         $('#employeeModal').modal('hide');
 
-        _this2.getAllEmployees();
+        _this2.getAllEmployees(_this2.currentUrl, true);
       })["catch"](function (error) {
         if (error.response) {
           _this2.errors = error.response.data.errors;
@@ -2194,13 +2274,13 @@ __webpack_require__.r(__webpack_exports__);
       var _this3 = this;
 
       axios["delete"]("".concat(this.base_url, "/api/employees/").concat(employeeId)).then(function (response) {
-        _this3.getAllEmployees();
+        _this3.getAllEmployees(_this3.currentUrl, true);
       })["catch"](function (error) {
         console.log(error.response);
       });
     },
     getCurrentEmployee: function getCurrentEmployee(employeeObj) {
-      console.log(employeeObj);
+      this.errors = [];
       this.employee = employeeObj;
     }
   }
@@ -37896,6 +37976,80 @@ var render = function() {
       2
     ),
     _vm._v(" "),
+    _c("div", { staticClass: "clearfix" }, [
+      _c("div", { staticClass: "hint-text" }, [
+        _vm._v("Showing "),
+        _c("b", [_vm._v(_vm._s(_vm.meta.current_page))]),
+        _vm._v(" out of "),
+        _c("b", [_vm._v(_vm._s(_vm.meta.last_page))]),
+        _vm._v(" entries")
+      ]),
+      _vm._v(" "),
+      _c("div", { staticClass: "text-right" }, [
+        _c("ul", { staticClass: "pagination" }, [
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllCompanies(_vm.links.first, false)
+                  }
+                }
+              },
+              [_vm._v("First")]
+            )
+          ]),
+          _vm._v(" "),
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllCompanies(_vm.links.prev, false)
+                  }
+                }
+              },
+              [_vm._v("Prev")]
+            )
+          ]),
+          _vm._v(" "),
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllCompanies(_vm.links.next, false)
+                  }
+                }
+              },
+              [_vm._v("Next")]
+            )
+          ]),
+          _vm._v(" "),
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllCompanies(_vm.links.last, false)
+                  }
+                }
+              },
+              [_vm._v("Last")]
+            )
+          ])
+        ])
+      ])
+    ]),
+    _vm._v(" "),
     _c("div", { staticClass: "modal fade", attrs: { id: "companyModal" } }, [
       _c("div", { staticClass: "modal-dialog" }, [
         _c(
@@ -38062,7 +38216,7 @@ var staticRenderFns = [
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
     return _c("div", { staticClass: "modal-header" }, [
-      _c("h4", { staticClass: "modal-title" }, [_vm._v("Add Company")]),
+      _c("h4", { staticClass: "modal-title" }, [_vm._v("Company")]),
       _vm._v(" "),
       _c(
         "button",
@@ -38176,6 +38330,80 @@ var render = function() {
       ],
       2
     ),
+    _vm._v(" "),
+    _c("div", { staticClass: "clearfix" }, [
+      _c("div", { staticClass: "hint-text" }, [
+        _vm._v("Showing "),
+        _c("b", [_vm._v(_vm._s(_vm.meta.current_page))]),
+        _vm._v(" out of "),
+        _c("b", [_vm._v(_vm._s(_vm.meta.last_page))]),
+        _vm._v(" entries")
+      ]),
+      _vm._v(" "),
+      _c("div", { staticClass: "text-right" }, [
+        _c("ul", { staticClass: "pagination" }, [
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllEmployees(_vm.links.first, false)
+                  }
+                }
+              },
+              [_vm._v("First")]
+            )
+          ]),
+          _vm._v(" "),
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllEmployees(_vm.links.prev, false)
+                  }
+                }
+              },
+              [_vm._v("Prev")]
+            )
+          ]),
+          _vm._v(" "),
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllEmployees(_vm.links.next, false)
+                  }
+                }
+              },
+              [_vm._v("Next")]
+            )
+          ]),
+          _vm._v(" "),
+          _c("li", { staticClass: "page-item" }, [
+            _c(
+              "button",
+              {
+                staticClass: "page-link",
+                on: {
+                  click: function($event) {
+                    return _vm.getAllEmployees(_vm.links.last, false)
+                  }
+                }
+              },
+              [_vm._v("Last")]
+            )
+          ])
+        ])
+      ])
+    ]),
     _vm._v(" "),
     _c("div", { staticClass: "modal fade", attrs: { id: "employeeModal" } }, [
       _c("div", { staticClass: "modal-dialog" }, [
@@ -38358,7 +38586,7 @@ var staticRenderFns = [
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
     return _c("div", { staticClass: "modal-header" }, [
-      _c("h4", { staticClass: "modal-title" }, [_vm._v("Add Company")]),
+      _c("h4", { staticClass: "modal-title" }, [_vm._v("Employee")]),
       _vm._v(" "),
       _c(
         "button",

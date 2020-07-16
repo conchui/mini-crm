@@ -34,12 +34,24 @@
             </tbody>
         </table>
 
+        <div class="clearfix">
+            <div class="hint-text">Showing <b>{{ meta.current_page }}</b> out of <b>{{ meta.last_page }}</b> entries</div>
+            <div class="text-right">
+                <ul class="pagination">
+                    <li class="page-item"><button @click="getAllCompanies(links.first, false)" class="page-link">First</button></li>
+                    <li class="page-item"><button @click="getAllCompanies(links.prev, false)" class="page-link">Prev</button></li>
+                    <li class="page-item"><button @click="getAllCompanies(links.next, false)" class="page-link">Next</button></li>
+                    <li class="page-item"><button @click="getAllCompanies(links.last, false)" class="page-link">Last</button></li>
+                </ul>
+            </div>
+        </div>
+
         <div id="companyModal" class="modal fade">
             <div class="modal-dialog">
                 <form class="modal-content" @submit.prevent>
                     
                     <div class="modal-header">						
-                        <h4 class="modal-title">Add Company</h4>                        
+                        <h4 class="modal-title">Company</h4>                        
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
                     </div>
                     <div class="modal-body">					
@@ -80,12 +92,13 @@
         },
 
         mounted() {
-            this.getAllCompanies();
+            this.getAllCompanies(`${this.base_url}/api/companies`, false);
         },
 
         data() {
             return {
                 companies: {},
+                allCompanies: [],
                 company: {
                     id      : '',
                     name    : '',
@@ -93,17 +106,53 @@
                     email   : '',
                     website : '',
                 },
+                links: {
+                    prev  : '',
+                    next  : '',
+                    first : '',
+                    last  : '',
+                },
+                meta: {
+                    current_page : 0,
+                    last_page    : 0,
+                },
+                currentUrl: '',
                 file: '',
                 errors: [],
             };
         },
 
         methods : {
-            getAllCompanies() {
+            getAllCompanies(url, refresh) {
+                if (url == null) return;
+
+                this.currentUrl = url;
+
+                let requestPage = url.slice(-1);
+
+                if (($.isNumeric(requestPage)) 
+                    && (typeof this.allCompanies[requestPage] !== 'undefined') 
+                        && !refresh){
+
+                    this.companies = this.allCompanies[requestPage].data;
+                    this.links     = this.allCompanies[requestPage].links;
+                    this.meta      = this.allCompanies[requestPage].meta;
+
+                    return;
+                }
+
                 axios
-                    .get(`${this.base_url}/api/companies`)
+                    .get(url)
                     .then(response => {
-                        this.companies = response.data.data;
+                        let requestObj  = response.data,
+                            currentPage = requestObj.meta.current_page;
+ 
+                        this.companies = requestObj.data;
+                        this.links     = requestObj.links;
+                        this.meta      = requestObj.meta;
+
+                        this.allCompanies[currentPage] = requestObj;
+
                     })
                     .catch(error => {
                         console.log(error.response);
@@ -126,7 +175,7 @@
                     })
                     .then(response => {
                         $('#companyModal').modal('hide');
-                        this.getAllCompanies();
+                        this.getAllCompanies(this.currentUrl, true);
                     })
                     .catch(error => {
                         if (error.response) {
@@ -138,7 +187,7 @@
             deleteCompany(companyId) {
                 axios.delete(`${this.base_url}/api/companies/${companyId}`)
                     .then(response => {
-                        this.getAllCompanies();
+                        this.getAllCompanies(this.currentUrl, true);
                     })
                     .catch(error => {
                         console.log(error.response);
@@ -146,6 +195,7 @@
             },
 
             getCurrentCompany(companyObj) {
+                this.errors = [];
                 this.company = companyObj;
             },
 
